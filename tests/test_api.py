@@ -101,6 +101,14 @@ def test_unsupported_type_and_missing_value_are_rejected(client, admin):
     assert {d["field"] for d in error["details"]} == {"type", "value"}
 
 
+def test_malformed_json_is_rejected(client, admin):
+    response = client.post(
+        "/api/v1/iocs", content="not json", headers={**admin, "Content-Type": "application/json"}
+    )
+    assert response.status_code == 422
+    assert response.json()["error"]["details"][0]["field"] == "body"
+
+
 # --- Watchlists ---
 
 
