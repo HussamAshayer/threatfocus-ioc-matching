@@ -9,6 +9,24 @@ services:
       - "5434:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ioc -d ioc"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg://ioc:ioc@db:5432/ioc
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
+      TENANT_A_API_KEY: ${TENANT_A_API_KEY:-dev-tenant-a-key}
+      TENANT_B_API_KEY: ${TENANT_B_API_KEY:-dev-tenant-b-key}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:
