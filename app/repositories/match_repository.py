@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,14 @@ from app.models import Ioc, Match, WatchlistItem
 class MatchRepository:
     def __init__(self, session: Session):
         self.session = session
+
+    def lock_indicator(self, indicator_type: str, value: str) -> None:
+        # Serializes concurrent IOC ingests and watchlist adds for the same indicator,
+        # so neither transaction misses the other's uncommitted row. Released on commit/rollback.
+        self.session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:key))"),
+            {"key": f"{indicator_type}:{value}"},
+        )
 
     def _create(self, item: WatchlistItem, ioc: Ioc) -> bool:
         new_id = self.session.execute(
